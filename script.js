@@ -4,6 +4,8 @@ const artifact = document.querySelector('#artifact');
 const tag = document.querySelector('#artifactTag');
 const readTime = document.querySelector('#readTime');
 const style = document.querySelector('#style');
+const audience = document.querySelector('#audience');
+const agent = document.querySelector('#agent');
 
 const examples = {
   'How does the internet work?': {
@@ -61,6 +63,44 @@ document.querySelector('#copyPrompt').addEventListener('click', async (event) =>
   await navigator.clipboard?.writeText(prompt);
   event.currentTarget.innerHTML = 'copied ✓';
   setTimeout(() => { event.currentTarget.innerHTML = 'copy AI prompt <span>↗</span>'; }, 1500);
+});
+
+function buildTask() {
+  const topic = question.value.trim() || 'How does the internet work?';
+  const selectedAgent = agent.value;
+  return `# Visual explainer task\n\n## Objective\nCreate a self-contained HTML visual explainer for: **${topic}**\n\n## Audience\nExplain this to someone who knows ${audience.value}.\n\n## Style\nUse ${style.options[style.selectedIndex].text}, with big visual structure, few words, and one clear mental model.\n\n## Requirements\n- Start with a one-sentence conclusion.\n- Show the mechanism as 3–5 connected steps or nodes.\n- Include one concrete example and one common misconception.\n- Use semantic HTML, responsive CSS, and no external dependencies.\n- Distinguish facts from assumptions; add sources when the topic is factual or time-sensitive.\n- Save the final artifact as explainer.html.\n\n## Agent\nThis task is prepared for ${selectedAgent}. Review the request before running commands or adding dependencies.\n`;
+}
+
+const agentCommands = {
+  claude: (task) => `claude ${quoteShell(task)}`,
+  codex: (task) => `codex exec ${quoteShell(task)}`,
+  gemini: (task) => `gemini -p ${quoteShell(task)}`,
+  opencode: (task) => `opencode run ${quoteShell(task)}`,
+  cursor: () => 'Open this task file in Cursor and ask the Agent to implement it: visual-explainer-task.md',
+  windsurf: () => 'Open this task file in Windsurf and ask Cascade to implement it: visual-explainer-task.md'
+};
+
+function quoteShell(value) {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+document.querySelector('#copyAgentPrompt').addEventListener('click', async (event) => {
+  const task = buildTask();
+  const command = agentCommands[agent.value](task);
+  await navigator.clipboard?.writeText(command);
+  event.currentTarget.textContent = 'copied ✓';
+  setTimeout(() => { event.currentTarget.textContent = 'copy agent prompt'; }, 1500);
+});
+
+document.querySelector('#downloadTask').addEventListener('click', (event) => {
+  const blob = new Blob([buildTask()], { type: 'text/markdown;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'visual-explainer-task.md';
+  link.click();
+  URL.revokeObjectURL(link.href);
+  event.currentTarget.textContent = 'downloaded ✓';
+  setTimeout(() => { event.currentTarget.textContent = 'download task .md'; }, 1500);
 });
 
 document.addEventListener('keydown', (event) => {

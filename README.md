@@ -46,6 +46,21 @@ python3 -m http.server 8000
 
 当前生成内容使用内置示例，不会调用 AI API。下一步可以接入 Claude、OpenAI 或其他模型，让任意问题都能动态生成 HTML explainer。
 
+## Coding agent 工作流
+
+页面下方的 **HAND OFF TO** 可以选择 Claude Code、Codex CLI、Gemini CLI、OpenCode、Cursor 或 Windsurf：
+
+- **copy agent prompt**：复制适配过的命令或操作提示。浏览器不会直接执行本机命令。
+- **download task .md**：下载一份可审阅、可提交给 coding agent 的任务包，包含问题、受众、风格和验收标准。
+
+如果本机已安装 agent，也可以直接使用 CLI：
+
+```bash
+node cli.mjs explain "How does an API work?" --agent claude --out explainer.html
+```
+
+支持 `claude`、`codex`、`gemini` 和 `opencode`。CLI 只会把明确的任务交给本地 agent，并将返回的 HTML 写入指定文件；运行前请确认当前目录和 agent 权限。
+
 ## 设计原则
 
 - **Big pictures**：让视觉结构承载理解。

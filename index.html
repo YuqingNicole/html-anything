@@ -44,6 +44,24 @@
         </div>
         <button class="generate" id="generate"><span>Generate explainer</span><span class="arrow">↗</span></button>
         <p class="tip">Or press <kbd>⌘</kbd> <kbd>↵</kbd> to generate</p>
+        <div class="agent-tools">
+          <div class="field-row">
+            <label>HAND OFF TO</label>
+            <select id="agent">
+              <option value="claude">Claude Code</option>
+              <option value="codex">Codex CLI</option>
+              <option value="gemini">Gemini CLI</option>
+              <option value="opencode">OpenCode</option>
+              <option value="cursor">Cursor</option>
+              <option value="windsurf">Windsurf</option>
+            </select>
+          </div>
+          <div class="agent-actions">
+            <button id="copyAgentPrompt" class="secondary-button">copy agent prompt</button>
+            <button id="downloadTask" class="secondary-button">download task .md</button>
+          </div>
+          <p class="tip">The browser prepares the task; your local agent executes it.</p>
+        </div>
       </div>
 
       <div class="panel preview-panel">
