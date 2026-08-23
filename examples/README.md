@@ -1,6 +1,6 @@
 # User cases / 用户案例
 
-这些案例展示 ELI5 Studio 不只是解释“知识点”，也可以把复杂材料整理成可读、可编辑、可分享的 mental model。
+这些案例展示 HTML Anything 不只是解释“知识点”，也可以把复杂材料整理成可读、可编辑、可分享的 mental model。
 
 ## 1. 技术概念：API 是怎么工作的？
 

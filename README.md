@@ -1,4 +1,4 @@
-# ELI5 Studio
+# HTML Anything
 
 > 中文 / English
 
@@ -6,7 +6,7 @@
 
 Turn complex questions into visual HTML explainers that are easy to understand.
 
-> Inspired by the `/eli5` idea: explain a topic to someone who knows nothing about it, using an HTML artifact with big pictures and few words.
+> Explain anything clearly with an editable visual artifact: big pictures, few words, one mental model.
 
 ## 怎么用
 
@@ -36,7 +36,7 @@ python3 -m http.server 8000
 2. 选择受众和解释风格。
 3. 点击 **Generate explainer**，或按 `⌘ + Enter`（Windows/Linux 使用 `Ctrl + Enter`）。
 4. 右侧会生成一个视觉化的 mental model。
-5. 点击 **copy AI prompt**，复制可用于 Claude 等 AI 工具的 `/eli5` prompt。
+5. 点击 **copy AI prompt**，复制可用于 Claude 等 AI 工具的解释 prompt。
 
 页面也提供了三个示例问题：the internet、airplanes 和 APIs，点击即可自动填入。
 
@@ -94,9 +94,9 @@ node cli.mjs explain "How does an API work?" --agent claude --out explainer.html
 
 # English
 
-## What is ELI5 Studio?
+## What is HTML Anything?
 
-ELI5 Studio turns a complex question into a visual HTML explainer: big ideas, few words, and one clear mental model. It is a dependency-free static prototype inspired by the `/eli5` idea.
+HTML Anything turns a complex question into an editable visual explainer: big ideas, few words, and one clear mental model. It is a dependency-free static prototype for turning understanding into a crafted HTML artifact.
 
 ## Quick start
 
