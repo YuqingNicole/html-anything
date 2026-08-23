@@ -65,14 +65,13 @@
 
       <div class="panel preview-panel">
         <div class="panel-top"><span class="label">YOUR EXPLANATION</span><span class="artifact-tag" id="artifactTag">READY</span></div>
-        <div class="view-switcher"><button id="readerMode" class="active">read</button><button id="canvasMode">edit canvas</button></div>
+        <div class="artifact-preview-note">A finished explanation opens in its own focused reading page.</div>
         <div id="artifact" class="artifact empty-state">
           <div class="empty-icon">✳</div>
           <h2>Your mental model<br>will live here.</h2>
           <p>One question in.<br>Aha moment out.</p>
         </div>
-        <div class="preview-footer"><span id="readTime">—</span><div><button id="refine" class="text-button">refine this</button><details class="artifact-menu"><summary>more</summary><button id="undo" class="text-button" disabled>undo</button><button id="redo" class="text-button" disabled>redo</button><button id="downloadJson" class="text-button">export JSON</button><button id="importJson" class="text-button">import JSON</button><button id="copyPrompt" class="text-button">copy AI prompt</button></details></div></div><input id="jsonFile" type="file" accept="application/json" hidden />
-        <div id="canvasHelp" class="canvas-help" hidden>Drag nodes to explore · double-click two nodes to connect</div>
+        <div class="preview-footer"><span id="readTime">—</span><div><a id="openArtifact" class="open-artifact-link" href="artifact.html">open full explainer →</a><button id="refine" class="text-button">refine this</button><details class="artifact-menu"><summary>more</summary><button id="downloadJson" class="text-button">export JSON</button><button id="importJson" class="text-button">import JSON</button><button id="copyPrompt" class="text-button">copy AI prompt</button></details></div></div><input id="jsonFile" type="file" accept="application/json" hidden />
       </div>
     </section>
 

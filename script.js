@@ -1,8 +1,7 @@
 import { createDocument, parseDocument, serializeDocument } from './packages/document/index.js';
 import { renderReader } from './packages/renderer/index.js';
 import { localPersistence } from './packages/persistence/index.js';
-import { createHistory, dispatch, undo, redo } from './packages/actions/index.js';
-import { renderCanvas } from './packages/canvas/renderer.js';
+import { createHistory } from './packages/actions/index.js';
 
 const question = document.querySelector('#question');
 const generate = document.querySelector('#generate');
@@ -16,11 +15,7 @@ const audience = document.querySelector('#audience');
 const agent = document.querySelector('#agent');
 let currentDocument;
 let history;
-let activeMode = 'reader';
-let viewport = { x: 40, y: 40, zoom: 1 };
-let connectFrom = null;
-let selectedIds = [];
-let dragTransaction = null;
+
 
 const examples = {
   'How does the internet work?': { title: 'The internet is a giant delivery system.', nodes: ['your phone', 'wifi', 'the web'], copy: 'Your message gets chopped into tiny packages, finds its way across many computers, then gets rebuilt on the other side.' },
@@ -70,54 +65,11 @@ generate.addEventListener('click', () => {
 
 document.querySelectorAll('.suggestions button').forEach((button) => button.addEventListener('click', () => { question.value = button.dataset.topic; question.focus(); }));
 
-function refreshHistoryControls() {
-  document.querySelector('#undo').disabled = !history?.undoStack.length;
-  document.querySelector('#redo').disabled = !history?.redoStack.length;
-}
-function refreshDocument() {
-  currentDocument = history.document;
-  if (activeMode === 'reader') { artifact.className = `artifact theme-${currentDocument.metadata?.theme || 'editorial'}`; artifact.innerHTML = renderReader(currentDocument); }
-  else renderInteractiveCanvas();
-  localPersistence.save(currentDocument);
-  refreshHistoryControls();
-}
-function renderInteractiveCanvas() {
-  artifact.className = `artifact canvas-artifact theme-${currentDocument.metadata?.theme || 'editorial'}`;
-  renderCanvas(artifact, currentDocument, {
-    viewport,
-    selectedIds,
-    onSelect: (id, additive) => { selectedIds = additive ? (selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id]) : [id]; renderInteractiveCanvas(); },
-    onMove: (id, dx, dy) => { if (!dragTransaction) dragTransaction = { id, dx: 0, dy: 0 }; dragTransaction.dx += dx; dragTransaction.dy += dy; history.document = history.document; const element = history.document.elements.find((item) => item.id === id); if (element) { element.x += dx; element.y += dy; } renderInteractiveCanvas(); },
-    onMoveEnd: () => { if (!dragTransaction) return; const tx = dragTransaction; history.undoStack.push(tx.resize ? { type: 'resize', id: tx.id, dw: -tx.dw, dh: -tx.dh } : { type: 'move', ids: [tx.id], dx: -tx.dx, dy: -tx.dy }); history.redoStack = []; dragTransaction = null; localPersistence.save(history.document); refreshHistoryControls(); },
-    onResize: (id, dw, dh) => { if (!dragTransaction) dragTransaction = { id, dw: 0, dh: 0, resize: true }; dragTransaction.dw += dw; dragTransaction.dh += dh; const element = history.document.elements.find((item) => item.id === id); if (element) { element.width = Math.max(90, element.width + dw); element.height = Math.max(50, element.height + dh); } renderInteractiveCanvas(); },
-    onConnect: (id) => {
-      if (!connectFrom) { connectFrom = id; tag.textContent = 'SELECT TARGET'; return; }
-      if (connectFrom !== id) history = dispatch(history, { type: 'connect', from: connectFrom, to: id, relation: 'flows_to', label: ' leads to ' });
-      connectFrom = null; tag.textContent = 'EDITED'; refreshDocument();
-    },
-  });
-}
-function deleteSelected() { if (!selectedIds.length || !history) return; history = dispatch(history, { type: 'delete', ids: selectedIds }); selectedIds = []; refreshDocument(); }
-function nudgeSelected(dx, dy) { if (!selectedIds.length || !history) return; history = dispatch(history, { type: 'move', ids: selectedIds, dx, dy }); refreshDocument(); }
-function setMode(mode) {
-  activeMode = mode;
-  document.querySelector('#readerMode').classList.toggle('active', mode === 'reader');
-  document.querySelector('#canvasMode').classList.toggle('active', mode === 'canvas');
-  document.querySelector('#canvasHelp').hidden = mode !== 'canvas';
-  if (currentDocument) refreshDocument();
-}
-document.querySelector('#readerMode').addEventListener('click', () => setMode('reader'));
-document.querySelector('#canvasMode').addEventListener('click', () => setMode('canvas'));
-artifact.addEventListener('wheel', (event) => {
-  if (activeMode !== 'canvas') return;
-  event.preventDefault(); viewport.zoom = Math.min(2, Math.max(.5, viewport.zoom * (event.deltaY < 0 ? 1.08 : .92))); renderInteractiveCanvas();
-}, { passive: false });
-document.querySelector('#undo').addEventListener('click', () => { if (history) { history = undo(history); refreshDocument(); } });
-document.querySelector('#redo').addEventListener('click', () => { if (history) { history = redo(history); refreshDocument(); } });
+
 document.querySelector('#importJson').addEventListener('click', () => document.querySelector('#jsonFile').click());
 document.querySelector('#jsonFile').addEventListener('change', async (event) => {
   const file = event.target.files?.[0]; if (!file) return;
-  try { currentDocument = parseDocument(await file.text()); currentDocument.metadata.theme ||= 'editorial'; history = createHistory(currentDocument); artifact.className = `artifact theme-${currentDocument.metadata.theme}`; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'IMPORTED'; localPersistence.save(currentDocument); refreshHistoryControls(); }
+  try { currentDocument = parseDocument(await file.text()); currentDocument.metadata.theme ||= 'editorial'; history = createHistory(currentDocument); artifact.className = `artifact theme-${currentDocument.metadata.theme}`; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'IMPORTED'; localPersistence.save(currentDocument); }
   catch (error) { tag.textContent = 'INVALID JSON'; console.warn('Could not import document:', error); }
   event.target.value = '';
 });
@@ -156,11 +108,7 @@ document.querySelector('#downloadTask').addEventListener('click', (event) => { c
 
 try {
   const saved = localPersistence.load();
-  if (saved) { currentDocument = parseDocument(saved); currentDocument.metadata.theme ||= 'editorial'; history = createHistory(currentDocument); artifact.className = `artifact theme-${currentDocument.metadata.theme}`; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'PICK UP WHERE YOU LEFT OFF'; readTime.textContent = 'about 1 min'; refreshHistoryControls(); }
+  if (saved) { currentDocument = parseDocument(saved); currentDocument.metadata.theme ||= 'editorial'; history = createHistory(currentDocument); artifact.className = `artifact theme-${currentDocument.metadata.theme}`; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'PICK UP WHERE YOU LEFT OFF'; readTime.textContent = 'about 1 min'; }
 } catch (error) { console.warn('Could not restore local document:', error); }
 
-document.addEventListener('keydown', (event) => {
-  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') generate.click();
-  if (activeMode === 'canvas' && (event.key === 'Delete' || event.key === 'Backspace')) { event.preventDefault(); deleteSelected(); }
-  if (activeMode === 'canvas' && event.key.startsWith('Arrow')) { event.preventDefault(); const step = event.shiftKey ? 10 : 2; nudgeSelected(event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0, event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0); }
-});
+document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') generate.click(); });
