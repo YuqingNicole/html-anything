@@ -115,7 +115,31 @@ node cli.mjs explain "How does an API work?" --agent claude --out explainer.html
 open explainer.html
 ```
 
-Supported CLI agents: `claude`, `codex`, `gemini`, and `opencode`. The CLI asks the selected local agent to return a self-contained HTML document and saves it to the output path. Review the task and confirm the agent's permissions before running it.
+Add project context when the explainer depends on an existing codebase:
+
+```bash
+node cli.mjs explain "Explain this feature" \\
+  --repo ~/my-app \\
+  --context src/app.ts \\
+  --agent claude \\
+  --out explainer.html
+```
+
+After previewing the result, iterate with feedback:
+
+```bash
+node cli.mjs refine "Make the diagram clearer and reduce the text" \\
+  --input explainer.html \\
+  --out explainer-v2.html \\
+  --agent claude \\
+  --open
+```
+
+Supported CLI agents: `claude`, `codex`, `gemini`, and `opencode`. The workflow is:
+
+`question + project context → task brief → coding agent → HTML preview → feedback → refined HTML`
+
+The CLI asks the selected local agent to return a self-contained HTML document and saves it to the output path. Review the task and confirm the agent's permissions before running it.
 
 ## Design principles
 
