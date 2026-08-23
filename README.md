@@ -1,6 +1,10 @@
 # ELI5 Studio
 
+> 中文 / English
+
 把复杂问题变成一张容易看懂的可视化解释卡片。
+
+Turn complex questions into visual HTML explainers that are easy to understand.
 
 > Inspired by the `/eli5` idea: explain a topic to someone who knows nothing about it, using an HTML artifact with big pictures and few words.
 
@@ -66,3 +70,63 @@ node cli.mjs explain "How does an API work?" --agent claude --out explainer.html
 - **Big pictures**：让视觉结构承载理解。
 - **Few words**：减少解释负担。
 - **One mental model**：先理解整体形状，再补充细节。
+
+---
+
+# English
+
+## What is ELI5 Studio?
+
+ELI5 Studio turns a complex question into a visual HTML explainer: big ideas, few words, and one clear mental model. It is a dependency-free static prototype inspired by the `/eli5` idea.
+
+## Quick start
+
+Open `index.html` directly, or run a local server if your browser restricts local files:
+
+```bash
+git clone https://github.com/YuqingNicole/html-anything.git
+cd html-anything
+python3 -m http.server 8000
+```
+
+Then visit <http://localhost:8000>.
+
+## How to use it
+
+1. Enter a question in **Your question**.
+2. Choose the audience and explanation style.
+3. Click **Generate explainer**, or press `⌘ + Enter` / `Ctrl + Enter`.
+4. Review the visual mental model in the right panel.
+5. Use **copy AI prompt** to continue the explanation with Claude or another AI tool.
+
+The current browser prototype uses built-in examples and does not call an AI API.
+
+## Coding agent workflow
+
+The **Hand off to** panel prepares work for Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, or Windsurf:
+
+- **Copy agent prompt** copies an agent-specific command or instruction. The browser does not execute local commands.
+- **Download task .md** downloads a reviewable task brief with the question, audience, style, and acceptance criteria.
+
+You can also invoke a local coding agent from the CLI:
+
+```bash
+node cli.mjs explain "How does an API work?" --agent claude --out explainer.html
+open explainer.html
+```
+
+Supported CLI agents: `claude`, `codex`, `gemini`, and `opencode`. The CLI asks the selected local agent to return a self-contained HTML document and saves it to the output path. Review the task and confirm the agent's permissions before running it.
+
+## Design principles
+
+- **Big pictures** — let visual structure carry the explanation.
+- **Few words** — every sentence should earn its place.
+- **One mental model** — understand the shape first, then add detail.
+
+## Files
+
+- `index.html` — page structure and controls
+- `styles.css` — visual design and responsive layout
+- `script.js` — interactions, examples, and prompt adapters
+- `cli.mjs` — local coding-agent runner
+
