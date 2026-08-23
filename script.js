@@ -27,9 +27,18 @@ const examples = {
   'What is an API?': { title: 'An API is a waiter for software.', nodes: ['your app', 'the API', 'a service'], copy: 'You ask for something in a language the service understands. The API carries your request out and brings the answer back.' }
 };
 
+function chooseTemplate(topic) {
+  if (template.value !== 'auto') return template.value;
+  const value = topic.toLowerCase();
+  if (/why|cause|affect|impact|economy|循环|影响|为什么/.test(value)) return 'feedbackLoop';
+  if (/compare|versus|trade.?off|取舍|区别|对比/.test(value)) return 'tradeoff';
+  if (/history|timeline|before|after|过程|发展|演变/.test(value)) return 'timeline';
+  if (/ways|types|branch|途径|分别|路径/.test(value)) return 'branches';
+  return 'pipeline';
+}
 function documentForTopic(topic) {
   const preset = examples[topic] || { title: `${topic.replace(/[?!.]+$/, '')} without the jargon.`, nodes: ['the question', 'one idea', 'aha!'], copy: 'Start with the simplest useful shape: what goes in, what changes, and what comes out. The details can come later.' };
-  return createDocument({ title: preset.title, thesis: preset.copy, nodes: preset.nodes, template: template.value });
+  return createDocument({ title: preset.title, thesis: preset.copy, nodes: preset.nodes, template: chooseTemplate(topic) });
 }
 
 function renderExplainer(topic) {
@@ -38,7 +47,7 @@ function renderExplainer(topic) {
   artifact.className = 'artifact';
   artifact.innerHTML = renderReader(currentDocument);
   tag.textContent = 'GENERATED';
-  readTime.textContent = '1 min read';
+  readTime.textContent = 'about 1 min';
   localPersistence.save(currentDocument);
 }
 
@@ -110,6 +119,13 @@ document.querySelector('#downloadJson').addEventListener('click', () => {
   link.download = 'explainer-document.json'; link.click(); URL.revokeObjectURL(link.href);
 });
 
+document.querySelector('#refine').addEventListener('click', () => {
+  if (!currentDocument) return question.focus();
+  question.value = `Make this clearer: ${currentDocument.title}`;
+  question.focus();
+  tag.textContent = 'TELL ME WHAT TO CHANGE';
+});
+
 document.querySelector('#copyPrompt').addEventListener('click', async (event) => {
   const topic = question.value.trim() || 'your topic';
   await navigator.clipboard?.writeText(`/eli5 ${topic}\n\nExplain like I'm someone who knows nothing about this topic, using an HTML artifact with big pictures and few words.`);
@@ -130,7 +146,7 @@ document.querySelector('#downloadTask').addEventListener('click', (event) => { c
 
 try {
   const saved = localPersistence.load();
-  if (saved) { currentDocument = parseDocument(saved); history = createHistory(currentDocument); artifact.className = 'artifact'; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'RESTORED'; readTime.textContent = '1 min read'; refreshHistoryControls(); }
+  if (saved) { currentDocument = parseDocument(saved); history = createHistory(currentDocument); artifact.className = 'artifact'; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'PICK UP WHERE YOU LEFT OFF'; readTime.textContent = 'about 1 min'; refreshHistoryControls(); }
 } catch (error) { console.warn('Could not restore local document:', error); }
 
 document.addEventListener('keydown', (event) => {
