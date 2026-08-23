@@ -204,3 +204,16 @@ The studio now includes a first interactive canvas layer:
 - Reader / Canvas mode — the same document can be read linearly or explored spatially
 
 Canvas editing is intentionally small and local-first: choose a visual template, drag or resize nodes, shift-click to multi-select, double-click nodes to connect them, use arrow keys/Delete, zoom with the wheel, then export JSON or restore it later. Collaboration, encrypted sharing, binary files and PWA remain adapter phases rather than hidden dependencies.
+
+### Architecture expansion
+
+The editor now also has explicit Excalidraw-inspired boundaries for:
+
+- `packages/common/` — shared IDs, geometry helpers and feature flags
+- `packages/elements/` — element types, bounds and binding repair
+- `packages/state/` — app state separated from document state
+- `packages/data/` — migration, restore and validation pipeline
+- `packages/library/` — reusable template items
+- `packages/editor-api/` — stable imperative editor API
+
+These packages remain browser/framework/vendor independent. The next architectural phase is to move the current page shell into `apps/studio`, then add IndexedDB snapshots, SVG/PNG export, and a structured agent patch contract.

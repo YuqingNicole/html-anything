@@ -3,6 +3,7 @@ import { validateDocument } from '../document/index.js';
 const templateMeta = {
   pipeline: { eyebrow: 'SYSTEM MAP', verb: 'flows into' },
   feedbackLoop: { eyebrow: 'FEEDBACK LOOP', verb: 'reinforces' },
+  'feedback-loop': { eyebrow: 'FEEDBACK LOOP', verb: 'reinforces' },
   branches: { eyebrow: 'TRANSMISSION MAP', verb: 'affects' },
   timeline: { eyebrow: 'SEQUENCE', verb: 'leads to' },
   tradeoff: { eyebrow: 'TRADE-OFF', verb: 'pulls against' },
