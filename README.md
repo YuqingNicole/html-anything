@@ -40,6 +40,25 @@ python3 -m http.server 8000
 
 页面也提供了三个示例问题：the internet、airplanes 和 APIs，点击即可自动填入。
 
+## User cases / 用户案例
+
+更多完整案例见 [`examples/README.md`](./examples/README.md)：
+
+- 用 Pipeline 解释 API、产品功能和数据流
+- 用 Feedback Loop + Branches 拆解“美债如何影响经济”
+- 用 Timeline + Decision Tree 解释 bug 与排错路径
+- 用 Branches + Trade-off 拆解商业模式
+- 把文章、播客 transcript 和代码库转成 mental model
+
+```text
+问题 + 最小必要上下文
+→ 选择主视觉模板
+→ ExplainerDocument
+→ Reader 阅读
+→ Canvas 编辑
+→ JSON / standalone HTML 导出
+```
+
 ## 当前版本说明
 
 这是一个无需构建工具、无需安装依赖的静态 prototype：
