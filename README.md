@@ -181,6 +181,7 @@ The studio now includes a first interactive canvas layer:
 - `packages/canvas/` — world/screen coordinates, SVG scene renderer, node drag and semantic edge hooks
 - `packages/actions/` — command-based insert/move/connect/delete/text updates with undo/redo history
 - `packages/export/` — standalone HTML export boundary
+- `packages/templates/` — reusable visual model choices: pipeline, feedback loop, branches, timeline, trade-off
 - Reader / Canvas mode — the same document can be read linearly or explored spatially
 
-Canvas editing is intentionally small and local-first: drag nodes, double-click nodes to connect them, zoom with the wheel, then export JSON or restore it later. Collaboration, encrypted sharing, binary files and PWA remain adapter phases rather than hidden dependencies.
+Canvas editing is intentionally small and local-first: choose a visual template, drag or resize nodes, shift-click to multi-select, double-click nodes to connect them, use arrow keys/Delete, zoom with the wheel, then export JSON or restore it later. Collaboration, encrypted sharing, binary files and PWA remain adapter phases rather than hidden dependencies.

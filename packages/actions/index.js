@@ -12,6 +12,8 @@ export function applyCommand(document, command) {
       return updateElements(next, command.ids, (element) => ({ ...element, x: element.x + command.dx, y: element.y + command.dy }));
     case 'updateText':
       return updateElements(next, [command.id], (element) => ({ ...element, ...command.patch }));
+    case 'resize':
+      return updateElements(next, [command.id], (element) => ({ ...element, width: Math.max(90, element.width + command.dw), height: Math.max(50, element.height + command.dh) }));
     case 'connect':
       next.elements.push({ id: command.id || makeId(), type: 'edge', from: command.from, to: command.to, relation: command.relation, label: command.label });
       return next;
@@ -31,6 +33,7 @@ export function invertCommand(document, command) {
     case 'move': return { ...command, dx: -command.dx, dy: -command.dy };
     case 'connect': return { type: 'delete', ids: [command.id] };
     case 'delete': return { type: 'insert', elements: document.elements.filter((element) => command.ids.includes(element.id)) };
+    case 'resize': return { type: 'resize', id: command.id, dw: -command.dw, dh: -command.dh };
     case 'updateText': {
       const element = document.elements.find((item) => item.id === command.id);
       const patch = Object.fromEntries(Object.keys(command.patch).map((key) => [key, element?.[key]]));

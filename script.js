@@ -10,6 +10,7 @@ const artifact = document.querySelector('#artifact');
 const tag = document.querySelector('#artifactTag');
 const readTime = document.querySelector('#readTime');
 const style = document.querySelector('#style');
+const template = document.querySelector('#template');
 const audience = document.querySelector('#audience');
 const agent = document.querySelector('#agent');
 let currentDocument;
@@ -17,6 +18,8 @@ let history;
 let activeMode = 'reader';
 let viewport = { x: 40, y: 40, zoom: 1 };
 let connectFrom = null;
+let selectedIds = [];
+let dragTransaction = null;
 
 const examples = {
   'How does the internet work?': { title: 'The internet is a giant delivery system.', nodes: ['your phone', 'wifi', 'the web'], copy: 'Your message gets chopped into tiny packages, finds its way across many computers, then gets rebuilt on the other side.' },
@@ -26,7 +29,7 @@ const examples = {
 
 function documentForTopic(topic) {
   const preset = examples[topic] || { title: `${topic.replace(/[?!.]+$/, '')} without the jargon.`, nodes: ['the question', 'one idea', 'aha!'], copy: 'Start with the simplest useful shape: what goes in, what changes, and what comes out. The details can come later.' };
-  return createDocument({ title: preset.title, thesis: preset.copy, nodes: preset.nodes, template: 'pipeline' });
+  return createDocument({ title: preset.title, thesis: preset.copy, nodes: preset.nodes, template: template.value });
 }
 
 function renderExplainer(topic) {
@@ -63,7 +66,11 @@ function renderInteractiveCanvas() {
   artifact.className = 'artifact canvas-artifact';
   renderCanvas(artifact, currentDocument, {
     viewport,
-    onMove: (id, dx, dy) => { history = dispatch(history, { type: 'move', ids: [id], dx, dy }); refreshDocument(); },
+    selectedIds,
+    onSelect: (id, additive) => { selectedIds = additive ? (selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id]) : [id]; renderInteractiveCanvas(); },
+    onMove: (id, dx, dy) => { if (!dragTransaction) dragTransaction = { id, dx: 0, dy: 0 }; dragTransaction.dx += dx; dragTransaction.dy += dy; history.document = history.document; const element = history.document.elements.find((item) => item.id === id); if (element) { element.x += dx; element.y += dy; } renderInteractiveCanvas(); },
+    onMoveEnd: () => { if (!dragTransaction) return; const tx = dragTransaction; history.undoStack.push(tx.resize ? { type: 'resize', id: tx.id, dw: -tx.dw, dh: -tx.dh } : { type: 'move', ids: [tx.id], dx: -tx.dx, dy: -tx.dy }); history.redoStack = []; dragTransaction = null; localPersistence.save(history.document); refreshHistoryControls(); },
+    onResize: (id, dw, dh) => { if (!dragTransaction) dragTransaction = { id, dw: 0, dh: 0, resize: true }; dragTransaction.dw += dw; dragTransaction.dh += dh; const element = history.document.elements.find((item) => item.id === id); if (element) { element.width = Math.max(90, element.width + dw); element.height = Math.max(50, element.height + dh); } renderInteractiveCanvas(); },
     onConnect: (id) => {
       if (!connectFrom) { connectFrom = id; tag.textContent = 'SELECT TARGET'; return; }
       if (connectFrom !== id) history = dispatch(history, { type: 'connect', from: connectFrom, to: id, relation: 'flows_to', label: ' leads to ' });
@@ -71,6 +78,8 @@ function renderInteractiveCanvas() {
     },
   });
 }
+function deleteSelected() { if (!selectedIds.length || !history) return; history = dispatch(history, { type: 'delete', ids: selectedIds }); selectedIds = []; refreshDocument(); }
+function nudgeSelected(dx, dy) { if (!selectedIds.length || !history) return; history = dispatch(history, { type: 'move', ids: selectedIds, dx, dy }); refreshDocument(); }
 function setMode(mode) {
   activeMode = mode;
   document.querySelector('#readerMode').classList.toggle('active', mode === 'reader');
@@ -109,7 +118,7 @@ document.querySelector('#copyPrompt').addEventListener('click', async (event) =>
 
 function buildTask() {
   const topic = question.value.trim() || 'How does the internet work?';
-  return `# Visual explainer task\n\n## Objective\nCreate a self-contained HTML visual explainer for: **${topic}**\n\n## Audience\nExplain this to someone who knows ${audience.value}.\n\n## Style\nUse ${style.options[style.selectedIndex].text}, with big visual structure, few words, and one clear mental model.\n\n## Design philosophy\n- Big pictures: visual structure should carry the explanation.\n- Few words: every sentence must earn its place.\n- One mental model: show the shape before adding detail.\n- Progressive disclosure: make the first 30 seconds useful, then allow depth.\n- Honest clarity: distinguish facts, assumptions, and uncertainty.\n- Crafted artifact: make a finished interface, not a wall of generated text.\n\n## Architecture\nReturn a validated ExplainerDocument first, then render it. Keep document state separate from app state. Use semantic element IDs and relations.\n\n## Requirements\n- Start with a one-sentence conclusion.\n- Show 3–5 connected nodes.\n- Include one example, one misconception, and sources when appropriate.\n- Use semantic HTML, responsive CSS, no external dependencies.\n- Return standalone HTML beginning with <!doctype html>.\n\n## Agent\nThis task is prepared for ${agent.value}. Review the request before running commands or adding dependencies.\n`;
+  return `# Visual explainer task\n\n## Objective\nCreate a self-contained HTML visual explainer for: **${topic}**\n\n## Audience\nExplain this to someone who knows ${audience.value}.\n\n## Style\nUse ${style.options[style.selectedIndex].text}, with big visual structure, few words, and one clear mental model.\n\n## Design philosophy\n- Big pictures: visual structure should carry the explanation.\n- Few words: every sentence must earn its place.\n- One mental model: show the shape before adding detail.\n- Visual template: ${template.options[template.selectedIndex].text}. Choose one primary model and keep the first screen legible.\n- Progressive disclosure: make the first 30 seconds useful, then allow depth.\n- Honest clarity: distinguish facts, assumptions, and uncertainty.\n- Crafted artifact: make a finished interface, not a wall of generated text.\n\n## Architecture\nReturn a validated ExplainerDocument first, then render it. Keep document state separate from app state. Use semantic element IDs and relations.\n\n## Requirements\n- Start with a one-sentence conclusion.\n- Show 3–5 connected nodes.\n- Include one example, one misconception, and sources when appropriate.\n- Use semantic HTML, responsive CSS, no external dependencies.\n- Return standalone HTML beginning with <!doctype html>.\n\n## Agent\nThis task is prepared for ${agent.value}. Review the request before running commands or adding dependencies.\n`;
 }
 
 const agentCommands = {
@@ -124,4 +133,8 @@ try {
   if (saved) { currentDocument = parseDocument(saved); history = createHistory(currentDocument); artifact.className = 'artifact'; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'RESTORED'; readTime.textContent = '1 min read'; refreshHistoryControls(); }
 } catch (error) { console.warn('Could not restore local document:', error); }
 
-document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') generate.click(); });
+document.addEventListener('keydown', (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') generate.click();
+  if (activeMode === 'canvas' && (event.key === 'Delete' || event.key === 'Backspace')) { event.preventDefault(); deleteSelected(); }
+  if (activeMode === 'canvas' && event.key.startsWith('Arrow')) { event.preventDefault(); const step = event.shiftKey ? 10 : 2; nudgeSelected(event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0, event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0); }
+});

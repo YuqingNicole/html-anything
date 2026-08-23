@@ -23,6 +23,8 @@
 .canvas-node text { fill:#f5f1e9; font:600 15px 'DM Sans',sans-serif; pointer-events:none; }
 .canvas-node.role-cause rect { stroke:#f6bf58; }
 .canvas-node.role-effect rect { stroke:#fd8b86; }
-.canvas-node:focus rect, .canvas-node:hover rect { stroke:#73b9ff; stroke-width:2.5; }
+.canvas-node:focus rect, .canvas-node:hover rect, .canvas-node.selected rect { stroke:#73b9ff; stroke-width:2.5; }
+.resize-handle { fill:#73b9ff; opacity:0; cursor:nwse-resize; }
+.canvas-node:hover .resize-handle, .canvas-node.selected .resize-handle { opacity:1; }
 .canvas-edge { fill:none; stroke:#73b9ff; stroke-width:2; opacity:.75; }
 .canvas-help { color:#8493a4; font:11px 'DM Mono',monospace; padding:8px 0; }
