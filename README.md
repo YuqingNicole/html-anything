@@ -201,6 +201,7 @@ The studio now includes a first interactive canvas layer:
 - `packages/actions/` — command-based insert/move/connect/delete/text updates with undo/redo history
 - `packages/export/` — standalone HTML export boundary
 - `packages/templates/` — reusable visual model choices: pipeline, feedback loop, branches, timeline, trade-off
+- Visual themes — editorial cards, dark canvas, notebook notes, executive brief; style is independent from the information template
 - Reader / Canvas mode — the same document can be read linearly or explored spatially
 
 Canvas editing is intentionally small and local-first: choose a visual template, drag or resize nodes, shift-click to multi-select, double-click nodes to connect them, use arrow keys/Delete, zoom with the wheel, then export JSON or restore it later. Collaboration, encrypted sharing, binary files and PWA remain adapter phases rather than hidden dependencies.

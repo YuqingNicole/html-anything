@@ -11,6 +11,7 @@ const tag = document.querySelector('#artifactTag');
 const readTime = document.querySelector('#readTime');
 const style = document.querySelector('#style');
 const template = document.querySelector('#template');
+const theme = document.querySelector('#theme');
 const audience = document.querySelector('#audience');
 const agent = document.querySelector('#agent');
 let currentDocument;
@@ -41,10 +42,19 @@ function documentForTopic(topic) {
   return createDocument({ title: preset.title, thesis: preset.copy, nodes: preset.nodes, template: chooseTemplate(topic) });
 }
 
+function chooseTheme(topic) {
+  if (theme.value !== 'auto') return theme.value;
+  const value = topic.toLowerCase();
+  if (/economy|market|business|strategy|投资|经济|商业|战略/.test(value)) return 'executive';
+  if (/history|timeline|story|过程|发展|演变/.test(value)) return 'notebook';
+  if (/system|api|code|agent|技术|系统/.test(value)) return 'canvas';
+  return 'editorial';
+}
 function renderExplainer(topic) {
   currentDocument = documentForTopic(topic);
+  currentDocument.metadata.theme = chooseTheme(topic);
   history = createHistory(currentDocument);
-  artifact.className = 'artifact';
+  artifact.className = `artifact theme-${currentDocument.metadata.theme}`;
   artifact.innerHTML = renderReader(currentDocument);
   tag.textContent = 'GENERATED';
   readTime.textContent = 'about 1 min';
@@ -66,13 +76,13 @@ function refreshHistoryControls() {
 }
 function refreshDocument() {
   currentDocument = history.document;
-  if (activeMode === 'reader') artifact.innerHTML = renderReader(currentDocument);
+  if (activeMode === 'reader') { artifact.className = `artifact theme-${currentDocument.metadata?.theme || 'editorial'}`; artifact.innerHTML = renderReader(currentDocument); }
   else renderInteractiveCanvas();
   localPersistence.save(currentDocument);
   refreshHistoryControls();
 }
 function renderInteractiveCanvas() {
-  artifact.className = 'artifact canvas-artifact';
+  artifact.className = `artifact canvas-artifact theme-${currentDocument.metadata?.theme || 'editorial'}`;
   renderCanvas(artifact, currentDocument, {
     viewport,
     selectedIds,
@@ -107,7 +117,7 @@ document.querySelector('#redo').addEventListener('click', () => { if (history) {
 document.querySelector('#importJson').addEventListener('click', () => document.querySelector('#jsonFile').click());
 document.querySelector('#jsonFile').addEventListener('change', async (event) => {
   const file = event.target.files?.[0]; if (!file) return;
-  try { currentDocument = parseDocument(await file.text()); history = createHistory(currentDocument); artifact.className = 'artifact'; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'IMPORTED'; localPersistence.save(currentDocument); refreshHistoryControls(); }
+  try { currentDocument = parseDocument(await file.text()); currentDocument.metadata.theme ||= 'editorial'; history = createHistory(currentDocument); artifact.className = `artifact theme-${currentDocument.metadata.theme}`; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'IMPORTED'; localPersistence.save(currentDocument); refreshHistoryControls(); }
   catch (error) { tag.textContent = 'INVALID JSON'; console.warn('Could not import document:', error); }
   event.target.value = '';
 });
@@ -146,7 +156,7 @@ document.querySelector('#downloadTask').addEventListener('click', (event) => { c
 
 try {
   const saved = localPersistence.load();
-  if (saved) { currentDocument = parseDocument(saved); history = createHistory(currentDocument); artifact.className = 'artifact'; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'PICK UP WHERE YOU LEFT OFF'; readTime.textContent = 'about 1 min'; refreshHistoryControls(); }
+  if (saved) { currentDocument = parseDocument(saved); currentDocument.metadata.theme ||= 'editorial'; history = createHistory(currentDocument); artifact.className = `artifact theme-${currentDocument.metadata.theme}`; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'PICK UP WHERE YOU LEFT OFF'; readTime.textContent = 'about 1 min'; refreshHistoryControls(); }
 } catch (error) { console.warn('Could not restore local document:', error); }
 
 document.addEventListener('keydown', (event) => {
