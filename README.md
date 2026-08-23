@@ -1,5 +1,7 @@
 # HTML Anything
 
+Product requirements: [`REQUIREMENTS.md`](./REQUIREMENTS.md)
+
 > 中文 / English
 
 把复杂问题变成一张容易看懂的可视化解释卡片。
