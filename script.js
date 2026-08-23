@@ -2,6 +2,7 @@ import { createDocument, parseDocument, serializeDocument } from './packages/doc
 import { renderReader } from './packages/renderer/index.js';
 import { localPersistence } from './packages/persistence/index.js';
 import { createHistory, dispatch, undo, redo } from './packages/actions/index.js';
+import { renderCanvas } from './packages/canvas/renderer.js';
 
 const question = document.querySelector('#question');
 const generate = document.querySelector('#generate');
@@ -13,6 +14,9 @@ const audience = document.querySelector('#audience');
 const agent = document.querySelector('#agent');
 let currentDocument;
 let history;
+let activeMode = 'reader';
+let viewport = { x: 40, y: 40, zoom: 1 };
+let connectFrom = null;
 
 const examples = {
   'How does the internet work?': { title: 'The internet is a giant delivery system.', nodes: ['your phone', 'wifi', 'the web'], copy: 'Your message gets chopped into tiny packages, finds its way across many computers, then gets rebuilt on the other side.' },
@@ -50,10 +54,36 @@ function refreshHistoryControls() {
 }
 function refreshDocument() {
   currentDocument = history.document;
-  artifact.innerHTML = renderReader(currentDocument);
+  if (activeMode === 'reader') artifact.innerHTML = renderReader(currentDocument);
+  else renderInteractiveCanvas();
   localPersistence.save(currentDocument);
   refreshHistoryControls();
 }
+function renderInteractiveCanvas() {
+  artifact.className = 'artifact canvas-artifact';
+  renderCanvas(artifact, currentDocument, {
+    viewport,
+    onMove: (id, dx, dy) => { history = dispatch(history, { type: 'move', ids: [id], dx, dy }); refreshDocument(); },
+    onConnect: (id) => {
+      if (!connectFrom) { connectFrom = id; tag.textContent = 'SELECT TARGET'; return; }
+      if (connectFrom !== id) history = dispatch(history, { type: 'connect', from: connectFrom, to: id, relation: 'flows_to', label: ' leads to ' });
+      connectFrom = null; tag.textContent = 'EDITED'; refreshDocument();
+    },
+  });
+}
+function setMode(mode) {
+  activeMode = mode;
+  document.querySelector('#readerMode').classList.toggle('active', mode === 'reader');
+  document.querySelector('#canvasMode').classList.toggle('active', mode === 'canvas');
+  document.querySelector('#canvasHelp').hidden = mode !== 'canvas';
+  if (currentDocument) refreshDocument();
+}
+document.querySelector('#readerMode').addEventListener('click', () => setMode('reader'));
+document.querySelector('#canvasMode').addEventListener('click', () => setMode('canvas'));
+artifact.addEventListener('wheel', (event) => {
+  if (activeMode !== 'canvas') return;
+  event.preventDefault(); viewport.zoom = Math.min(2, Math.max(.5, viewport.zoom * (event.deltaY < 0 ? 1.08 : .92))); renderInteractiveCanvas();
+}, { passive: false });
 document.querySelector('#undo').addEventListener('click', () => { if (history) { history = undo(history); refreshDocument(); } });
 document.querySelector('#redo').addEventListener('click', () => { if (history) { history = redo(history); refreshDocument(); } });
 document.querySelector('#importJson').addEventListener('click', () => document.querySelector('#jsonFile').click());

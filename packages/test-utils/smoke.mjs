@@ -1,0 +1,11 @@
+import { createDocument, parseDocument, serializeDocument } from '../document/index.js';
+import { createHistory, dispatch, undo, redo } from '../actions/index.js';
+import { exportStandaloneHtml } from '../export/index.js';
+const document = createDocument({ title: 'Smoke test', thesis: 'A', nodes: ['A', 'B', 'C'] });
+let history = createHistory(document);
+history = dispatch(history, { type: 'move', ids: ['node-1'], dx: 12, dy: 8 });
+history = undo(history); history = redo(history);
+if (history.document.elements[0].x !== 12) throw new Error('history failed');
+const roundTrip = parseDocument(serializeDocument(history.document));
+if (!exportStandaloneHtml(roundTrip).startsWith('<!doctype html>')) throw new Error('export failed');
+console.log('html-anything smoke test: ok');

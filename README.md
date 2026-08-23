@@ -173,3 +173,14 @@ ExplainerDocument
 - `script.js` — thin studio shell that coordinates document creation and UI state
 
 The current implementation is Phase A: it deliberately does not yet include drag/selection, commands, undo/redo, or real-time collaboration. Those belong to the next document-core and editor phases rather than being faked inside the static prototype.
+
+## Phase B status
+
+The studio now includes a first interactive canvas layer:
+
+- `packages/canvas/` — world/screen coordinates, SVG scene renderer, node drag and semantic edge hooks
+- `packages/actions/` — command-based insert/move/connect/delete/text updates with undo/redo history
+- `packages/export/` — standalone HTML export boundary
+- Reader / Canvas mode — the same document can be read linearly or explored spatially
+
+Canvas editing is intentionally small and local-first: drag nodes, double-click nodes to connect them, zoom with the wheel, then export JSON or restore it later. Collaboration, encrypted sharing, binary files and PWA remain adapter phases rather than hidden dependencies.

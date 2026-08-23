@@ -66,12 +66,14 @@
 
       <div class="panel preview-panel">
         <div class="panel-top"><span class="label">LIVE ARTIFACT</span><span class="artifact-tag" id="artifactTag">READY</span></div>
+        <div class="view-switcher"><button id="readerMode" class="active">reader</button><button id="canvasMode">canvas</button></div>
         <div id="artifact" class="artifact empty-state">
           <div class="empty-icon">✳</div>
           <h2>Your mental model<br>will live here.</h2>
           <p>One question in.<br>Aha moment out.</p>
         </div>
         <div class="preview-footer"><span id="readTime">—</span><div><button id="undo" class="text-button" disabled>undo</button><button id="redo" class="text-button" disabled>redo</button><button id="downloadJson" class="text-button">export JSON <span>↗</span></button><button id="importJson" class="text-button">import JSON</button><button id="copyPrompt" class="text-button">copy AI prompt <span>↗</span></button></div></div><input id="jsonFile" type="file" accept="application/json" hidden />
+        <div id="canvasHelp" class="canvas-help" hidden>Drag nodes to explore · double-click two nodes to connect</div>
       </div>
     </section>
 
