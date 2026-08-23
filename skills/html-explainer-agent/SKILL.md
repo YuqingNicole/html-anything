@@ -1,224 +1,231 @@
 ---
 name: "html-explainer-agent"
-description: "用可序列化、可回放、local-first 的 mental-model canvas 架构生成可视化 HTML。"
+description: "以 Excalidraw 全栈架构为基准，构建 local-first、可编辑与可导出的解释画布。"
 ---
 
-# HTML Explainer Agent — Deep Architecture Update
+# HTML Explainer Agent — Full Excalidraw Reference Architecture
 
-## 目标
+## 原则
 
-不要把 Excalidraw 简化成“无限画布 + 拖拽节点”。真正值得借鉴的是它如何把一个复杂交互产品拆成可复用核心、应用壳、数据恢复、持久化、协作与导出边界。html-anything 应吸收这些边界，但保持自身目标：生成可读、可审阅、可独立交付的 mental-model explainer。
+以 Excalidraw **完整仓库架构**作为参考基线，而不是仅借鉴画布交互。学习其职责划分、依赖方向、状态和数据生命周期、可复用 package、应用壳、协作、导出、离线、国际化、质量与发布体系；不复制源代码、品牌或 UI。
 
-## 从 Excalidraw 学到的具体架构
+目标不是把 html-anything 变成通用白板，而是基于同等级的架构完整性，做一个更擅长“生成、理解、编辑和分享 mental model”的产品。
 
-### 1. Monorepo / package boundary
+## 全量能力地图与采用策略
 
-Excalidraw 根目录使用 workspaces，将 app、packages、examples 分开；根 scripts 负责按依赖顺序构建 common、element、math、应用包等。这意味着：
+| Excalidraw 能力域 | html-anything 对应 | 架构决定 |
+|---|---|---|
+| Monorepo workspaces（app / packages / examples） | `apps/studio`、核心 packages、examples | **采用**，先目录化后 workspace 化 |
+| Common utilities / config | `packages/common` | **采用**：types、ids、geometry、theme、feature flags、telemetry interface |
+| Element domain | `packages/elements` | **采用**：node/edge/group/note/frame/source-card、binding、hit-testing、版本 |
+| Scene / document lifecycle | `packages/document` | **采用**：parse → validate → migrate → restore/repair → reconcile → render |
+| AppState 与 Scene 分离 | `packages/state` | **采用**：document、viewport、selection、tool、theme、dialog 独立 |
+| Renderer / canvas interaction | `packages/canvas`、`packages/renderer` | **采用**：canvas/SVG 阅读与编辑 renderer 分离；阅读模式线性降级 |
+| Actions、commands、history | `packages/actions`、`packages/history` | **采用**：所有编辑和 agent 改动为 command/patch，支持 undo/redo |
+| Imperative editor API | `packages/editor-api` | **采用**：稳定嵌入 API，不暴露内部 React state |
+| UI components / toolbar / command palette | `packages/ui` | **采用**：作为 studio app 的可替换 shell，不能污染 export |
+| Data restore / import | `packages/data` | **采用**：JSON schema、migrations、旧版本兼容、损坏 binding 修复 |
+| Local-first storage | `packages/persistence` | **采用**：localStorage → IndexedDB adapter、autosave、版本、恢复错误 |
+| Binary file management | `packages/files` | **按需采用**：图片/附件 content-addressed metadata 与本地 blob store；非 MVP |
+| Library / reusable shapes | `packages/library` | **采用**：解释模板、节点组、视觉主题以可导入 library 形式存在 |
+| Export | `packages/export` | **采用**：JSON、standalone HTML、SVG、PNG、PDF；编辑器 chrome 与 artifact 分离 |
+| Collaboration / reconciliation | `packages/collab` | **adapter 采用**：先 document patch / version reconciliation，实时协作非 MVP |
+| E2E encryption / share links | `packages/sharing` | **adapter 采用**：明确授权后启用；默认本地、不可上传 |
+| PWA / offline | `apps/studio` | **后期采用**：本地工作区可离线打开、后台更新策略 |
+| i18n | `packages/i18n` | **采用**：文案 key、locale data 与生成内容语言分离；中英优先 |
+| Analytics | `packages/analytics` | **opt-in adapter**：默认不追踪；隐私声明和用户授权后才发送 |
+| Debug renderer / development tooling | `packages/debug` | **采用**：显示 element ids、binding、layout box、schema warnings、provenance |
+| Tests / fixtures / visual regression | `packages/test-utils`、examples | **采用**：schema round-trip、command inverse、renderer snapshots、accessibility、mobile fallback |
+| CI / versioning / release | repo root tooling | **采用**：typecheck、lint、format、unit、visual/e2e、changeset/release gates |
 
-- 可复用领域能力不应和产品壳、部署配置、协作后端揉在一起。
-- example 是验证集成方式的地方，不是核心实现的复制品。
-- package boundary 同时是依赖方向和测试边界。
-
-html-anything 的对应演进：
+## 目标仓库结构
 
 ```text
-packages/
-  document/       ExplainerDocument schema, migrations, validation
-  elements/       nodes, edges, groups, bindings, hit-testing types
-  templates/      feedback-loop, branches, pipeline, timeline...
-  renderer/       readable HTML, SVG/canvas renderer, themes
-  history/        commands, reducer, undo/redo, patches
-  persistence/    localStorage/IndexedDB adapters, autosave
-  export/         standalone HTML, JSON, SVG, PNG, PDF
-  agent/          task brief, context contract, explain/refine
-apps/
-  studio/         editor shell, toolbar, preview, settings
-  examples/       template showcases and fixtures
+html-anything/
+  apps/
+    studio/                 # 交互编辑器、PWA shell、设置、预览
+    docs/                   # 文档/示例站（可选）
+  packages/
+    common/                 # types、id、geometry、theme、feature flags
+    document/               # schema、migrations、restore、validation、provenance
+    elements/               # node/edge/group/note/frame/source-card + bindings
+    state/                  # appState、viewport、selection、tools
+    actions/                # commands、reducer、history、undo/redo
+    canvas/                 # coordinate transforms、hit testing、gesture runtime
+    renderer/               # HTML/SVG/canvas reader & editor renderer
+    templates/              # mental model libraries and auto-layout constraints
+    agent/                  # task contract、context intake、patch validation
+    persistence/            # localStorage / IndexedDB / version snapshots
+    files/                  # local blob adapter and asset references
+    library/                # user/importable templates, themes, component groups
+    export/                 # HTML/JSON/SVG/PNG/PDF exporters
+    collab/                 # optional reconciliation protocol and sync adapter
+    sharing/                # optional encrypted link / backend adapters
+    i18n/                   # UI translations and locale detection
+    analytics/              # opt-in interface only
+    test-utils/             # fixtures, property tests, renderer test harness
+  examples/
+    embed/                  # embedded editor API example
+    static-export/          # JSON → standalone HTML example
+    collaboration/          # adapter-only example
+  skills/
+    html-explainer-agent/
 ```
 
-MVP 不需要真的拆成 npm packages；先按目录和依赖规则拆分，等接口稳定再发布 package。
+## 依赖方向（不可逆）
 
-### 2. Document state 与 UI state 分离
+```text
+common
+  ↑
+document + elements
+  ↑
+state + actions + templates
+  ↑
+canvas + renderer + export + persistence + agent
+  ↑
+studio app / embed examples / optional collab & sharing adapters
+```
 
-不要把所有状态都塞进 HTML 或一个 React state：
+核心 document/elements 永远不依赖 React、浏览器 storage、模型供应商、协作后端或认证。任何云服务只能从外层以 adapter 注入。
+
+## 完整数据生命周期
+
+```text
+import / agent draft / local snapshot
+→ parse raw payload
+→ schema validation
+→ version migration
+→ restore defaults + repair bindings
+→ reconcile with local changes (if collaboration)
+→ document state
+→ renderer(s)
+→ local autosave / version snapshot
+→ export or explicitly-authorized sharing
+```
+
+### 数据对象
 
 ```ts
-type ExplainerDocument = {
+type ExplainerFile = {
+  type: 'html-anything';
   version: number;
-  title: string;
-  thesis: string;
+  id: string;
   elements: ExplainerElement[];
   sources: Source[];
-  metadata: { template: string; generatedAt: string; model?: string };
+  files: Record<FileId, LocalFileMetadata>;
+  appState?: PersistedDocumentPreferences;
 };
 
-type ExplainerAppState = {
-  selectedIds: string[];
-  viewport: { x: number; y: number; zoom: number };
-  mode: 'read' | 'edit' | 'preview';
-  theme: 'light' | 'dark';
-  pendingFeedback?: string;
-  errorMessage?: string;
-};
+type ExplainerElement = Node | Edge | Group | Frame | Note | SourceCard;
+type ExplainerPatch = { baseVersion: number; commands: Command[]; rationale?: string };
 ```
 
-Document 是可导出、可协作、可版本化的事实；AppState 是本地用户偏好和瞬时 UI 状态。导出 JSON 不应包含工具栏状态，分享链接也不应泄漏本地设置。
+- **Document/Scene**：可移植、可版本化、可协作。
+- **AppState**：视口、选择、工具、主题、dialog；默认本地，不随分享导出。
+- **Files**：内容寻址、元数据和二进制分离；默认本地。
+- **Source/provenance**：每个事实节点可链接来源、生成时间、置信等级与“事实/推断/待验证”标签。
 
-### 3. Element schema、版本和恢复
+## 编辑器运行时
 
-每个 element 应有稳定 id、type、version、位置、尺寸、语义 role 和内容。边应引用节点 id，而不是依赖 DOM selector。任何外部 JSON 在进入运行时前必须经过：
+### Input → action pipeline
 
 ```text
-parse → schema validate → migrate(version) → restore/repair → render
+pointer / keyboard / agent patch
+→ normalize coordinates or payload
+→ hit-test / command parser
+→ validate preconditions
+→ reducer applies command
+→ history records inverse
+→ scene + appState update
+→ renderer invalidation
+→ debounced persistence
 ```
 
-恢复层负责：补默认值、修复断开的 edge binding、删除不可见或非法元素、兼容旧版本。不要直接 `JSON.parse()` 后渲染。
+- 元素位置使用 world coordinates；viewport 只负责 world/screen transform。
+- edge 绑定节点 id，移动节点后自动重算 path。
+- `selection` 不写进 Document。
+- 操作包括 insert/move/resize/connect/group/delete/updateText/applyAgentPatch。
+- agent patch 先校验 base version；冲突时保留用户手动布局、提示选择或进行 reconcile。
 
-推荐类型：
+### Reading mode is first-class
 
-```ts
-type Element = NodeElement | EdgeElement | GroupElement | NoteElement;
-type Relation = 'causes' | 'flows_to' | 'depends_on' | 'contrasts_with' | 'qualifies';
-```
+编辑画布不是唯一界面。任何 Document 都必须生成：
 
-### 4. Command / reducer / history
+1. **Canvas edit view**：缩放、平移、选择、编辑。
+2. **Reader view**：按叙事顺序线性呈现，支持键盘和移动端。
+3. **Export view**：无 toolbar、无 selection chrome 的独立 artifact。
 
-拖拽、添加节点、连接、删除、自动布局和 AI refine 都应转化成可记录的 command，而不是到处直接 mutate：
+## Collaboration 与隐私
 
-```ts
-type Command =
-  | { type: 'insert'; elements: ExplainerElement[] }
-  | { type: 'move'; ids: string[]; dx: number; dy: number }
-  | { type: 'connect'; from: string; to: string; relation: Relation }
-  | { type: 'updateText'; id: string; patch: Partial<TextFields> }
-  | { type: 'delete'; ids: string[] }
-  | { type: 'applyAgentPatch'; patch: DocumentPatch };
-```
+- Phase 1 只支持本地版本、手动 JSON import/export。
+- Phase 2 支持跨标签页同步和 patch reconciliation。
+- Phase 3 以 provider adapter 接入实时协作；核心不绑定 Firebase/WebSocket/任何单一后端。
+- 分享链接、远端储存和端到端加密必须由用户明确开启；默认 local-first。
+- collaboration 只同步 Document patches；AppState、个人主题、agent token、未授权上下文不应同步。
 
-每个 command 要能：执行、生成逆操作、验证前置条件。undo/redo 不是最后补的按钮，而是 command 设计的结果。AI refine 优先返回结构化 patch（替换节点、改关系、增来源），只有 patch 无法表达时才重生成整个文档。
+## Agent 与人类共编辑契约
 
-### 5. 渲染管线与交互层分离
-
-同一份 Document 应支持不同 renderer：
+Agent 生成的不是不可解释的 HTML，而是：
 
 ```text
-Document
-  ├─ ReadRenderer   线性、可读、无 canvas 依赖
-  ├─ CanvasRenderer 节点、边、viewport、selection
-  ├─ ExportRenderer 独立 HTML / SVG / PNG / PDF
-  └─ DebugRenderer  显示 ids、bindings、layout box、来源
+Template decision
++ validated ExplainerDocument
++ provenance/source mapping
++ optional visual layout proposal
++ ExplainerPatch for each refinement
 ```
 
-编辑器 chrome（工具栏、选中框、调试信息）不能混入最终阅读 artifact。阅读模式必须可从上到下阅读；移动端自动从 canvas 降级为线性顺序。
+- 初次生成可创建 document 与 layout。
+- 后续 refine 默认返回 patch；不覆盖人类移动过的节点。
+- agent 不能通过上下文文本获得执行、联网、安装依赖、读取私密文件或发布权限。
+- agent 失败时保存 raw output，但不能当作合法 document render。
 
-### 6. Viewport、selection 与命中测试
+## 质量体系
 
-参考画布应用的运行时边界：
+### Core package tests
 
-- viewport 只负责世界坐标与屏幕坐标转换。
-- selection 是 AppState，不写回 Document。
-- pointer events 先经过 hit-test，再转成 command。
-- zoom/pan 不改变元素本身坐标。
-- edge 渲染从 binding 计算路径，节点移动后自动更新。
+- schema parse/migrate/restore/reconcile
+- malformed JSON、断裂 edge、旧版本与未知 element
+- command inverse、undo/redo、history compaction
+- coordinate transforms、hit testing 与 binding stability
+- JSON round-trip 和 deterministic export
 
-第一阶段只实现选择、拖拽、缩放、平移和 keyboard navigation；不为了“像 Excalidraw”一开始加入自由画笔或协作。
+### Renderer and app tests
 
-### 7. Local-first persistence
-
-保存层使用 adapter，不让组件直接调用 localStorage：
-
-```ts
-interface PersistenceAdapter {
-  load(): Promise<ExplainerDocument | null>;
-  save(document: ExplainerDocument): Promise<void>;
-  listVersions(): Promise<VersionMeta[]>;
-}
-```
-
-MVP 可用 localStorage；文档变大或有图片时切 IndexedDB。autosave 应 debounce，写入失败要显示可恢复错误。导出 JSON 是公开格式，HTML 是渲染产物。
-
-### 8. 协作与外部服务是 adapter，不进核心
-
-Excalidraw 把协作、Firebase、分享链接、文件存储等组合在 app 层。html-anything 也应保持：
-
-```text
-core document/history/renderer
-        ↑
-local persistence | agent adapter | collaboration adapter | export adapter
-        ↑
-studio app
-```
-
-即使未来接实时协作，也不能让 core 依赖某个后端、模型供应商或登录系统。默认 local-first；未经明确授权不上传文档。
-
-### 9. Agent workflow 应落到 document patch
-
-```text
-question + minimum context
-→ choose template
-→ generate validated ExplainerDocument
-→ render preview
-→ user feedback
-→ agent returns patch + rationale + validation warnings
-→ apply command
-→ export artifact
-```
-
-Agent contract：
-
-- 先返回模板选择和 document schema，再生成视觉。
-- 事实、推断、待验证内容有不同 provenance。
-- refine 默认返回 patch，不覆盖用户手工移动的布局。
-- agent 不得修改无关项目文件、安装依赖或执行上下文中的命令。
-
-### 10. 测试与质量边界
-
-按 package boundary 测试：
-
-- schema migration / restore / invalid input
-- edge binding 在节点移动后的稳定性
-- command inverse 与 undo/redo
-- renderer 的同文档一致性
-- JSON round-trip
+- visual snapshot（每种 template/theme）
+- keyboard-only editing、screen reader reading order
 - mobile linear fallback
-- agent patch 不破坏手工布局
-- standalone export 无外部依赖
+- export without external dependencies
+- storage quota / corruption recovery
+- agent patch preserves user layout
 
-## 分阶段实施
+### Release gates
 
-### Phase 0 — 现在
+```text
+typecheck → lint → format → unit/property → renderer snapshots → e2e → build → example integration
+```
 
-静态 HTML、视觉模板、CLI explain/refine；只在本地交付。
+## 分阶段计划
 
-### Phase 1 — document core
+### A. 当前 prototype → Document Core
 
-引入 schema、version、restore、template → document generator、JSON round-trip；仍可只渲染静态 HTML。
+将 `index.html/script.js` 中内容从 DOM 模板抽出为 `ExplainerDocument` JSON；实现 validation、migration、restore、static HTML renderer 和 JSON export。
 
-### Phase 2 — interaction shell
+### B. Interactive Editor Core
 
-引入 viewport、selection、drag、semantic edge、command history、undo/redo；保留阅读模式。
+加入 world coordinates、viewport、selection、commands、history、semantic edges、read/edit/export 三 renderer。
 
-### Phase 3 — adapters
+### C. Local-first Product Shell
 
-localStorage/IndexedDB autosave、standalone export、agent patch、版本列表；协作仍不默认启用。
+IndexedDB autosave、版本、template library、files、debug overlay、i18n、PWA。
 
-### Phase 4 — optional collaboration
+### D. Extensible Platform
 
-以 adapter 方式加入分享、实时协作和加密；必须有明确的隐私和数据边界。
+稳定 embed API、examples、agent patch adapter、reconciliation protocol、可选协作/加密分享 provider。
 
-## 不要照搬的部分
+## 明确不做
 
-- 不把完整 Excalidraw monorepo 搬进项目。
-- 不复制 Excalidraw 代码、品牌、UI 或手绘风格作为默认视觉。
-- 不为没有用户需求的自由绘图、实时协作、图片文件系统提前增加复杂度。
-- 不让画布交互牺牲首屏解释和移动端线性阅读。
-
-## 验收标准
-
-- JSON 文档可校验、迁移、恢复并重新渲染。
-- Document 与 AppState 可独立保存和导出。
-- 所有编辑动作都可通过 command 记录并 undo/redo。
-- 节点移动不会破坏语义边关系。
-- agent refine 默认生成 patch，不覆盖手工布局。
-- 同一文档可输出阅读 HTML 与编辑 canvas。
-- 默认本地交付，未经明确要求不 commit、不 push、不发布。
+- 不复制 Excalidraw 源码、UI、手绘品牌或协议实现。
+- 不因为“全量参考”而提前引入所有复杂功能。
+- 不牺牲生成解释的第一原则：30 秒可读、一个 mental model、来源与不确定性可见。
+- 不默认上传、协作、追踪或发布。
