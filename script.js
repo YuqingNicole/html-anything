@@ -1,3 +1,8 @@
+import { createDocument, parseDocument, serializeDocument } from './packages/document/index.js';
+import { renderReader } from './packages/renderer/index.js';
+import { localPersistence } from './packages/persistence/index.js';
+import { createHistory, dispatch, undo, redo } from './packages/actions/index.js';
+
 const question = document.querySelector('#question');
 const generate = document.querySelector('#generate');
 const artifact = document.querySelector('#artifact');
@@ -6,103 +11,87 @@ const readTime = document.querySelector('#readTime');
 const style = document.querySelector('#style');
 const audience = document.querySelector('#audience');
 const agent = document.querySelector('#agent');
+let currentDocument;
+let history;
 
 const examples = {
-  'How does the internet work?': {
-    title: 'The internet is\na giant delivery system.',
-    nodes: ['your phone', 'wifi', 'the web'],
-    copy: 'Your message gets chopped into tiny packages, finds its way across many computers, then gets rebuilt on the other side.'
-  },
-  'Why do airplanes stay in the air?': {
-    title: 'An airplane flies\nby pushing air down.',
-    nodes: ['wing shape', 'airflow', 'lift'],
-    copy: 'The wing is shaped so air moves faster over the top. The pressure difference pushes the plane upward — lift.'
-  },
-  'What is an API?': {
-    title: 'An API is a\nwaiter for software.',
-    nodes: ['your app', 'the API', 'a service'],
-    copy: 'You ask for something in a language the service understands. The API carries your request out and brings the answer back.'
-  }
+  'How does the internet work?': { title: 'The internet is a giant delivery system.', nodes: ['your phone', 'wifi', 'the web'], copy: 'Your message gets chopped into tiny packages, finds its way across many computers, then gets rebuilt on the other side.' },
+  'Why do airplanes stay in the air?': { title: 'An airplane flies by pushing air down.', nodes: ['wing shape', 'airflow', 'lift'], copy: 'The wing is shaped so air moves faster over the top. The pressure difference pushes the plane upward — lift.' },
+  'What is an API?': { title: 'An API is a waiter for software.', nodes: ['your app', 'the API', 'a service'], copy: 'You ask for something in a language the service understands. The API carries your request out and brings the answer back.' }
 };
 
+function documentForTopic(topic) {
+  const preset = examples[topic] || { title: `${topic.replace(/[?!.]+$/, '')} without the jargon.`, nodes: ['the question', 'one idea', 'aha!'], copy: 'Start with the simplest useful shape: what goes in, what changes, and what comes out. The details can come later.' };
+  return createDocument({ title: preset.title, thesis: preset.copy, nodes: preset.nodes, template: 'pipeline' });
+}
+
 function renderExplainer(topic) {
-  const preset = examples[topic] || {
-    title: `${topic.replace(/[?!.]+$/, '')}\nwithout the jargon.`,
-    nodes: ['the question', 'one idea', 'aha!'],
-    copy: 'Start with the simplest useful shape: what goes in, what changes, and what comes out. The details can come later.'
-  };
+  currentDocument = documentForTopic(topic);
+  history = createHistory(currentDocument);
   artifact.className = 'artifact';
-  artifact.innerHTML = `
-    <h2 class="explain-title">${preset.title.replace('\n', '<br>')}</h2>
-    <div class="explain-visual">${preset.nodes.map((node, i) => `<span class="node">${node}</span>${i < preset.nodes.length - 1 ? '<span class="connector">→</span>' : ''}`).join('')}</div>
-    <p class="explain-copy">${preset.copy}</p>`;
+  artifact.innerHTML = renderReader(currentDocument);
   tag.textContent = 'GENERATED';
   readTime.textContent = '1 min read';
+  localPersistence.save(currentDocument);
 }
 
 generate.addEventListener('click', () => {
   const topic = question.value.trim() || 'How does the internet work?';
   generate.querySelector('span').textContent = 'Generating…';
   tag.textContent = 'THINKING';
-  setTimeout(() => {
-    renderExplainer(topic);
-    generate.querySelector('span').textContent = 'Generate explainer';
-  }, 420);
+  setTimeout(() => { renderExplainer(topic); generate.querySelector('span').textContent = 'Generate explainer'; }, 420);
 });
 
-document.querySelectorAll('.suggestions button').forEach(button => {
-  button.addEventListener('click', () => {
-    question.value = button.dataset.topic;
-    question.focus();
-  });
+document.querySelectorAll('.suggestions button').forEach((button) => button.addEventListener('click', () => { question.value = button.dataset.topic; question.focus(); }));
+
+function refreshHistoryControls() {
+  document.querySelector('#undo').disabled = !history?.undoStack.length;
+  document.querySelector('#redo').disabled = !history?.redoStack.length;
+}
+function refreshDocument() {
+  currentDocument = history.document;
+  artifact.innerHTML = renderReader(currentDocument);
+  localPersistence.save(currentDocument);
+  refreshHistoryControls();
+}
+document.querySelector('#undo').addEventListener('click', () => { if (history) { history = undo(history); refreshDocument(); } });
+document.querySelector('#redo').addEventListener('click', () => { if (history) { history = redo(history); refreshDocument(); } });
+document.querySelector('#importJson').addEventListener('click', () => document.querySelector('#jsonFile').click());
+document.querySelector('#jsonFile').addEventListener('change', async (event) => {
+  const file = event.target.files?.[0]; if (!file) return;
+  try { currentDocument = parseDocument(await file.text()); history = createHistory(currentDocument); artifact.className = 'artifact'; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'IMPORTED'; localPersistence.save(currentDocument); refreshHistoryControls(); }
+  catch (error) { tag.textContent = 'INVALID JSON'; console.warn('Could not import document:', error); }
+  event.target.value = '';
+});
+
+document.querySelector('#downloadJson').addEventListener('click', () => {
+  if (!currentDocument) return;
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(new Blob([serializeDocument(currentDocument)], { type: 'application/json' }));
+  link.download = 'explainer-document.json'; link.click(); URL.revokeObjectURL(link.href);
 });
 
 document.querySelector('#copyPrompt').addEventListener('click', async (event) => {
   const topic = question.value.trim() || 'your topic';
-  const prompt = `/eli5 ${topic}\n\nExplain like I'm someone who knows nothing about this topic, using an HTML artifact with big pictures and few words.`;
-  await navigator.clipboard?.writeText(prompt);
-  event.currentTarget.innerHTML = 'copied ✓';
-  setTimeout(() => { event.currentTarget.innerHTML = 'copy AI prompt <span>↗</span>'; }, 1500);
+  await navigator.clipboard?.writeText(`/eli5 ${topic}\n\nExplain like I'm someone who knows nothing about this topic, using an HTML artifact with big pictures and few words.`);
+  event.currentTarget.innerHTML = 'copied ✓'; setTimeout(() => { event.currentTarget.innerHTML = 'copy AI prompt <span>↗</span>'; }, 1500);
 });
 
 function buildTask() {
   const topic = question.value.trim() || 'How does the internet work?';
-  const selectedAgent = agent.value;
-  return `# Visual explainer task\n\n## Objective\nCreate a self-contained HTML visual explainer for: **${topic}**\n\n## Audience\nExplain this to someone who knows ${audience.value}.\n\n## Style\nUse ${style.options[style.selectedIndex].text}, with big visual structure, few words, and one clear mental model.\n\n## Design philosophy\n- Big pictures: visual structure should carry the explanation.\n- Few words: every sentence must earn its place.\n- One mental model: show the shape of the idea before adding detail.\n- Progressive disclosure: make the first 30 seconds useful, then allow depth.\n- Honest clarity: distinguish facts, assumptions, and uncertainty.\n- Crafted artifact: the result should feel like a small, finished interface—not a wall of generated text.\n\n## Requirements\n- Start with a one-sentence conclusion.\n- Show the mechanism as 3–5 connected steps or nodes.\n- Include one concrete example and one common misconception.\n- Use semantic HTML, responsive CSS, and no external dependencies.\n- Distinguish facts from assumptions; add sources when the topic is factual or time-sensitive.\n- Save the final artifact as explainer.html.\n\n## Agent\nThis task is prepared for ${selectedAgent}. Review the request before running commands or adding dependencies.\n`;
+  return `# Visual explainer task\n\n## Objective\nCreate a self-contained HTML visual explainer for: **${topic}**\n\n## Audience\nExplain this to someone who knows ${audience.value}.\n\n## Style\nUse ${style.options[style.selectedIndex].text}, with big visual structure, few words, and one clear mental model.\n\n## Design philosophy\n- Big pictures: visual structure should carry the explanation.\n- Few words: every sentence must earn its place.\n- One mental model: show the shape before adding detail.\n- Progressive disclosure: make the first 30 seconds useful, then allow depth.\n- Honest clarity: distinguish facts, assumptions, and uncertainty.\n- Crafted artifact: make a finished interface, not a wall of generated text.\n\n## Architecture\nReturn a validated ExplainerDocument first, then render it. Keep document state separate from app state. Use semantic element IDs and relations.\n\n## Requirements\n- Start with a one-sentence conclusion.\n- Show 3–5 connected nodes.\n- Include one example, one misconception, and sources when appropriate.\n- Use semantic HTML, responsive CSS, no external dependencies.\n- Return standalone HTML beginning with <!doctype html>.\n\n## Agent\nThis task is prepared for ${agent.value}. Review the request before running commands or adding dependencies.\n`;
 }
 
 const agentCommands = {
-  claude: (task) => `claude ${quoteShell(task)}`,
-  codex: (task) => `codex exec ${quoteShell(task)}`,
-  gemini: (task) => `gemini -p ${quoteShell(task)}`,
-  opencode: (task) => `opencode run ${quoteShell(task)}`,
-  cursor: () => 'Open this task file in Cursor and ask the Agent to implement it: visual-explainer-task.md',
-  windsurf: () => 'Open this task file in Windsurf and ask Cascade to implement it: visual-explainer-task.md'
+  claude: (task) => `claude ${quoteShell(task)}`, codex: (task) => `codex exec ${quoteShell(task)}`, gemini: (task) => `gemini -p ${quoteShell(task)}`, opencode: (task) => `opencode run ${quoteShell(task)}`, cursor: () => 'Open visual-explainer-task.md in Cursor and ask Agent to implement it.', windsurf: () => 'Open visual-explainer-task.md in Windsurf and ask Cascade to implement it.'
 };
+function quoteShell(value) { return `'${value.replaceAll("'", "'\\''")}'`; }
+document.querySelector('#copyAgentPrompt').addEventListener('click', async (event) => { await navigator.clipboard?.writeText(agentCommands[agent.value](buildTask())); event.currentTarget.textContent = 'copied ✓'; setTimeout(() => { event.currentTarget.textContent = 'copy agent prompt'; }, 1500); });
+document.querySelector('#downloadTask').addEventListener('click', (event) => { const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([buildTask()], { type: 'text/markdown;charset=utf-8' })); link.download = 'visual-explainer-task.md'; link.click(); URL.revokeObjectURL(link.href); event.currentTarget.textContent = 'downloaded ✓'; setTimeout(() => { event.currentTarget.textContent = 'download task .md'; }, 1500); });
 
-function quoteShell(value) {
-  return `'${value.replaceAll("'", "'\\''")}'`;
-}
+try {
+  const saved = localPersistence.load();
+  if (saved) { currentDocument = parseDocument(saved); history = createHistory(currentDocument); artifact.className = 'artifact'; artifact.innerHTML = renderReader(currentDocument); tag.textContent = 'RESTORED'; readTime.textContent = '1 min read'; refreshHistoryControls(); }
+} catch (error) { console.warn('Could not restore local document:', error); }
 
-document.querySelector('#copyAgentPrompt').addEventListener('click', async (event) => {
-  const task = buildTask();
-  const command = agentCommands[agent.value](task);
-  await navigator.clipboard?.writeText(command);
-  event.currentTarget.textContent = 'copied ✓';
-  setTimeout(() => { event.currentTarget.textContent = 'copy agent prompt'; }, 1500);
-});
-
-document.querySelector('#downloadTask').addEventListener('click', (event) => {
-  const blob = new Blob([buildTask()], { type: 'text/markdown;charset=utf-8' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'visual-explainer-task.md';
-  link.click();
-  URL.revokeObjectURL(link.href);
-  event.currentTarget.textContent = 'downloaded ✓';
-  setTimeout(() => { event.currentTarget.textContent = 'download task .md'; }, 1500);
-});
-
-document.addEventListener('keydown', (event) => {
-  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') generate.click();
-});
+document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') generate.click(); });

@@ -154,3 +154,22 @@ The CLI asks the selected local agent to return a self-contained HTML document a
 - `script.js` — interactions, examples, and prompt adapters
 - `cli.mjs` — local coding-agent runner
 
+
+## Architecture status
+
+The prototype now has a first document-core boundary inspired by Excalidraw:
+
+```text
+ExplainerDocument
+  → validate / restore
+  → reader renderer
+  → local persistence
+  → JSON export
+```
+
+- `packages/document/` — versioned document schema, validation, restore/repair, serialization
+- `packages/renderer/` — reader renderer; the same document can later feed canvas and export renderers
+- `packages/persistence/` — local-first browser draft adapter
+- `script.js` — thin studio shell that coordinates document creation and UI state
+
+The current implementation is Phase A: it deliberately does not yet include drag/selection, commands, undo/redo, or real-time collaboration. Those belong to the next document-core and editor phases rather than being faked inside the static prototype.

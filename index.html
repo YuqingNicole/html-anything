@@ -71,7 +71,7 @@
           <h2>Your mental model<br>will live here.</h2>
           <p>One question in.<br>Aha moment out.</p>
         </div>
-        <div class="preview-footer"><span id="readTime">—</span><button id="copyPrompt" class="text-button">copy AI prompt <span>↗</span></button></div>
+        <div class="preview-footer"><span id="readTime">—</span><div><button id="undo" class="text-button" disabled>undo</button><button id="redo" class="text-button" disabled>redo</button><button id="downloadJson" class="text-button">export JSON <span>↗</span></button><button id="importJson" class="text-button">import JSON</button><button id="copyPrompt" class="text-button">copy AI prompt <span>↗</span></button></div></div><input id="jsonFile" type="file" accept="application/json" hidden />
       </div>
     </section>
 
@@ -82,6 +82,6 @@
 
     <footer><span>Built for the perpetually curious.</span><span class="mono">HTML ANYTHING / 2026</span></footer>
   </main>
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
