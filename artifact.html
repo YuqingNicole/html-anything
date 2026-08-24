@@ -13,12 +13,12 @@
   <div class="grain"></div>
   <header class="artifact-nav"><a class="brand" href="index.html"><span class="brand-mark">✳</span> HTML<span class="muted"> Anything</span></a><div class="artifact-breadcrumb mono"><span>ARTIFACT</span><span class="breadcrumb-slash">/</span><span id="artifactName">UNTITLED EXPLAINER</span></div><div class="artifact-nav-actions"><span id="artifactStatus" class="mono">LOCAL ARTIFACT</span><a class="back-link" href="index.html">← make another</a></div></header>
   <main class="artifact-shell">
-    <div class="artifact-page-toolbar"><div class="view-switcher" role="tablist" aria-label="Artifact view"><button id="readerMode" class="active" role="tab">read</button><button id="canvasMode" role="tab">edit canvas</button></div><div class="artifact-actions"><button id="undo" class="text-button" disabled>undo</button><button id="redo" class="text-button" disabled>redo</button><button id="exportJson" class="text-button">export JSON</button></div></div>
+    <div class="artifact-page-toolbar"><div class="view-switcher" role="tablist" aria-label="Artifact view"><button id="readerMode" class="active" role="tab">read</button><button id="canvasMode" role="tab">edit canvas</button></div><div class="artifact-actions"><button id="fitCanvas" class="text-button" hidden>fit canvas</button><button id="undo" class="text-button" disabled>undo</button><button id="redo" class="text-button" disabled>redo</button><button id="exportHtml" class="text-button">export HTML</button><button id="exportJson" class="text-button">export JSON</button></div></div>
     <div class="artifact-workspace">
       <aside id="artifactOutline" class="artifact-outline" aria-label="Explainer outline" hidden></aside>
       <div class="artifact-main"><div id="artifact" class="artifact artifact-page-content empty-state"><div class="empty-icon">✳</div><h2>Nothing to explain<br>just yet.</h2><p>Make an explainer first, then it will live here.</p><a class="artifact-primary-link" href="index.html">go to studio →</a></div><div id="readerProgress" class="reader-progress" hidden><span></span></div></div>
     </div>
-    <p id="canvasHelp" class="canvas-help" hidden>Drag nodes to explore · shift-click to multi-select · double-click two nodes to connect</p>
+    <p id="canvasHelp" class="canvas-help" hidden>Drag nodes to arrange · drag empty space to pan · shift-click to multi-select · double-click two nodes to connect</p>
   </main>
   <script type="module" src="artifact.js"></script>
 </body>

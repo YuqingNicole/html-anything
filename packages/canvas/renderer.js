@@ -26,5 +26,18 @@ export function renderCanvas(container, explainerDocument, { viewport = { x: 40,
     });
     group.addEventListener('pointerup', () => { if (moved) onMoveEnd?.(); start = null; resizeStart = null; moved = false; }); group.addEventListener('dblclick', () => onConnect?.(node.id));
   }
+  let panStart;
+  svg.addEventListener('pointerdown', (event) => {
+    if (event.target !== svg) return;
+    panStart = { x: event.clientX, y: event.clientY, viewportX: viewport.x, viewportY: viewport.y };
+    svg.setPointerCapture(event.pointerId);
+  });
+  svg.addEventListener('pointermove', (event) => {
+    if (!panStart) return;
+    viewport.x = panStart.viewportX + event.clientX - panStart.x;
+    viewport.y = panStart.viewportY + event.clientY - panStart.y;
+    scene.setAttribute('transform', `translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`);
+  });
+  svg.addEventListener('pointerup', () => { panStart = null; });
   svg.append(scene); container.append(svg); return svg;
 }
